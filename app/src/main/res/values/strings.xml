@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">AutoSprinkler</string>
+    <string name="LedBtnOn">Turn Led On</string>
+    <string name="LedBtnOff">Turn Led Off</string>
 </resources>
