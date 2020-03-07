@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -32,34 +33,30 @@ public class MainActivity extends AppCompatActivity {
     private static final UUID my_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
     BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     OutputStream mmOutputStream;
-    BluetoothSocket mmSocket;
-
-
+    BluetoothSocket mmSocket = null;
+    Button btnConnect;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        initiateBT();
+        // Bluetooth connection button
+        btnConnect = findViewById(R.id.btnConnect);
+        btnConnect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                initiateBT();
+            }
+        });
 //        mmOutputStream = mmSocket.getOutputStream();
-
-
-
 
         mBlueStatus = findViewById(R.id.statusBluetooth);
 
-        BluetoothDevice device = bluetoothAdapter.getRemoteDevice("00:14:03:05:59:A2");
-        /*
-        // Discover devices - onCreate part (1 / 3)
-        // Register for broadcasts when a device is discovered.
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        registerReceiver(receiver, filter);
-        */
+        Toast.makeText(this, "Back to onCreate", Toast.LENGTH_LONG).show();
+
         Button btnOn = findViewById(R.id.btnOn);
         Button btnOff = findViewById(R.id.btnOff);
-
-        final ConnectThread thrd = new ConnectThread(device);
 
         btnOn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -98,42 +95,16 @@ public class MainActivity extends AppCompatActivity {
             for (BluetoothDevice device : pairedDevices) {
                 String deviceName = device.getName();
                 String deviceHardwareAddress = device.getAddress(); // MAC address
-                if (/*deviceName.equals("HC-06") &&*/ deviceHardwareAddress.equals("00:14:03:05:59:A2")) {
+                if (deviceHardwareAddress.equals("00:14:03:05:59:A2")) {
                     ConnectThread connectedDevice = new ConnectThread(device);
-                    connectedDevice.run();
-                    Toast.makeText(this, "Connection to target device initiated", Toast.LENGTH_LONG).show();
+                    //MyBluetoothService btService = new MyBluetoothService(device); //TODO check out if this is the right direction.
+                    connectedDevice.start(); // TODO this has been changed from run() to start() as per new information that run() make this run in the same thread
                     break;
                 }
             }
 
         }
     }
-    /*
-    // Discover devices - class part (2 / 3)
-    // Create a BroadcastReceiver for ACTION_FOUND.
-    private final BroadcastReceiver receiver = new BroadcastReceiver() {
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                // Discovery has found a device. Get the BluetoothDevice
-                // object and its info from the Intent.
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                String deviceName = device.getName();
-                String deviceHardwareAddress = device.getAddress(); // MAC address
-            }
-        }
-    };
-
-
-    // Discover devices - class part (3 / 3)
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
-        // Don't forget to unregister the ACTION_FOUND receiver.
-        unregisterReceiver(receiver);
-    }
-    */
 
     // Connect as a client-----------------------------------------------------------------------
    public class ConnectThread extends Thread {
@@ -164,7 +135,8 @@ public class MainActivity extends AppCompatActivity {
                 // Connect to the remote device through the socket. This call blocks
                 // until it succeeds or throws an exception.
                 mmSocket.connect();
-                Toast.makeText(getApplicationContext(), "Connection to socket initiated", Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), "Connection through Socket established", Toast.LENGTH_LONG).show();
+
             } catch (IOException connectException) {
                 // Unable to connect; close the socket and return.
                 try {
@@ -173,10 +145,6 @@ public class MainActivity extends AppCompatActivity {
                     Log.e("ErrorMsg", "Could not close the client socket", closeException);
                 }
             }
-
-            // The connection attempt succeeded. Perform work associated with
-            // the connection in a separate thread.
-            //manageMyConnectedSocket(mmSocket); //TODO - understand what is this for?
         }
 
         // Closes the client socket and causes the thread to finish.
@@ -195,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
     public void turnLedOn() {
         if (mmSocket != null) {
             try {
-                mmSocket.getOutputStream().write("0".getBytes());
+                mmSocket.getOutputStream().write(1);
             } catch (IOException e) {
                 Toast.makeText(getApplicationContext(), "Error Turning Led On", Toast.LENGTH_LONG).show();
             }
@@ -205,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
     private void turnLedOff() {
         if (mmSocket != null) {
             try {
-                mmSocket.getOutputStream().write("1".getBytes());
+                mmSocket.getOutputStream().write(0);
             } catch (IOException e) {
                 Toast.makeText(getApplicationContext(), "Error Turning Led Off", Toast.LENGTH_LONG).show();
             }
